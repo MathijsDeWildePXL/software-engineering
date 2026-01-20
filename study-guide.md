@@ -359,6 +359,853 @@ References:
 └── feature → C3
 ```
 
+### Praktische Git Voorbeelden met Branches (Voor Examen)
+
+#### Voorbeeld 1: Complete Workflow met Feature Branch
+
+```bash
+# 1. Repository initialiseren en eerste commit maken
+git init
+git add .
+git commit -m "Initial commit"
+
+# 2. Nieuwe feature branch aanmaken
+git branch feature/user-login
+git checkout feature/user-login
+# OF korter (branch aanmaken én switchen):
+git checkout -b feature/user-login
+
+# 3. Wijzigingen maken op feature branch
+# (bestand bewerken)
+git add login.cs
+git commit -m "Add login functionality"
+git commit -m "Add password validation"
+
+# 4. Terug naar main en feature mergen
+git checkout main
+git merge feature/user-login
+
+# 5. Feature branch verwijderen (cleanup)
+git branch -d feature/user-login
+```
+
+**Hoe weet je hoeveel branches er zijn?**
+```bash
+# Alle lokale branches tonen:
+git branch
+# Output voorbeeld:
+#   feature/user-login
+# * main
+#   bugfix/fix-crash
+
+# Alle remote branches tonen:
+git branch -r
+# Output voorbeeld:
+# origin/main
+# origin/develop
+# origin/feature/payment
+
+# Alle branches (lokaal + remote):
+git branch -a
+# Output voorbeeld:
+# * main
+#   feature/user-login
+#   remotes/origin/main
+#   remotes/origin/develop
+
+# ANTWOORD: Tel het aantal regels in de output
+# In bovenstaand voorbeeld: 3 lokale branches
+```
+
+#### Voorbeeld 2: Parallel Development met Meerdere Branches
+
+```bash
+# Situatie: Main branch met 2 commits
+git log --oneline
+# a1b2c3d Second commit
+# 9f8e7d6 Initial commit
+
+# Developer A maakt feature branch
+git checkout -b feature/shopping-cart
+echo "ShoppingCart.cs" > ShoppingCart.cs
+git add ShoppingCart.cs
+git commit -m "Add shopping cart class"
+git commit -m "Add cart item validation"
+
+# Developer B maakt bugfix branch (vanaf main!)
+git checkout main
+git checkout -b bugfix/fix-null-pointer
+echo "fix" >> Program.cs
+git add Program.cs
+git commit -m "Fix null pointer exception"
+
+# Status bekijken:
+git log --oneline --all --graph
+# * 5d4c3b2 (bugfix/fix-null-pointer) Fix null pointer exception
+# | * 2a1b0c9 (feature/shopping-cart) Add cart item validation
+# | * 7e8f9g0 Add shopping cart class
+# |/
+# * a1b2c3d (main) Second commit
+# * 9f8e7d6 Initial commit
+```
+
+**Hoeveel commits tel je?**
+```bash
+# Commits op huidige branch tellen:
+git rev-list --count HEAD
+# Output: 3 (als je op bugfix branch bent)
+
+# Commits op specifieke branch tellen:
+git rev-list --count main
+# Output: 2
+
+git rev-list --count feature/shopping-cart
+# Output: 4 (Initial + Second + 2 shopping cart commits)
+
+# ALLE commits in de repository tellen:
+git rev-list --all --count
+# Output: 5 (alle unieke commits)
+
+# Alternatief met log:
+git log --oneline main | wc -l
+# Output: 2
+
+# ANTWOORD: Tel commits vanaf de basis tot de branch tip
+# Let op: Shared commits (zoals Initial commit) worden maar 1x geteld!
+```
+
+#### Voorbeeld 3: Merge Types Herkennen
+
+**Fast-Forward Merge:**
+```bash
+# Situatie: feature branch is vooruit, main heeft geen nieuwe commits
+git checkout -b feature/add-logger
+git commit -m "Add logger class"
+git commit -m "Add file logging"
+
+git checkout main
+git merge feature/add-logger
+# Output: "Fast-forward"
+
+# Resultaat in log:
+git log --oneline --graph
+# * 3c4d5e6 (HEAD -> main, feature/add-logger) Add file logging
+# * 2b3c4d5 Add logger class
+# * 1a2b3c4 Initial commit
+
+# HERKENNING: Lineaire geschiedenis, geen merge commit!
+```
+
+**Merge Commit (3-way merge):**
+```bash
+# Situatie: Zowel main als feature hebben nieuwe commits
+git checkout -b feature/api-integration
+git commit -m "Add API client"
+
+git checkout main
+git commit -m "Update README"
+
+git merge feature/api-integration
+# Output: "Merge made by the 'recursive' strategy"
+
+# Resultaat in log:
+git log --oneline --graph
+# *   7h8i9j0 (HEAD -> main) Merge branch 'feature/api-integration'
+# |\
+# | * 5f6g7h8 (feature/api-integration) Add API client
+# * | 3d4e5f6 Update README
+# |/
+# * 1a2b3c4 Initial commit
+
+# HERKENNING: Merge commit met 2 parents, diamant vorm in graph!
+```
+
+**Rebase (Lineaire Historie):**
+```bash
+# Situatie: Feature branch updaten met main changes
+git checkout feature/new-feature
+git rebase main
+
+# Resultaat in log:
+git log --oneline --graph
+# * 9j0k1l2 (HEAD -> feature/new-feature) Feature commit 2
+# * 8i9j0k1 Feature commit 1
+# * 5f6g7h8 (main) Latest main commit
+# * 1a2b3c4 Initial commit
+
+# HERKENNING: Lineaire geschiedenis, commits zijn "verplaatst"
+# Let op: Commit hashes zijn VERANDERD (rewrite history)!
+```
+
+#### Voorbeeld 4: Wie Deed de Laatste Commit?
+
+```bash
+# Meest recente commit info:
+git log -1
+# Output:
+# commit a1b2c3d4e5f6
+# Author: Jan Janssen <jan@example.com>
+# Date:   Mon Jan 20 14:30:00 2026 +0100
+#
+#     Add user authentication
+
+# Alleen naam van auteur:
+git log -1 --format="%an"
+# Output: Jan Janssen
+
+# Alleen email:
+git log -1 --format="%ae"
+# Output: jan@example.com
+
+# Compact formaat:
+git log -1 --format="%an <%ae> - %s"
+# Output: Jan Janssen <jan@example.com> - Add user authentication
+
+# Laatste 3 commits met auteurs:
+git log -3 --format="%h - %an: %s"
+# Output:
+# a1b2c3d - Jan Janssen: Add user authentication
+# 9f8e7d6 - Marie Peeters: Fix bug in login
+# 5d4c3b2 - Jan Janssen: Update dependencies
+
+# ANTWOORD: Gebruik git log -1 --format="%an" voor auteursnaam
+```
+
+#### Voorbeeld 5: Git Object Database Tekenen
+
+**Scenario**: Repository met 3 commits en 1 branch
+
+```bash
+# Commits maken:
+git init
+echo "Hello" > file1.txt
+git add file1.txt
+git commit -m "C1: Initial commit"
+
+echo "World" > file2.txt
+git add file2.txt
+git commit -m "C2: Add file2"
+
+git checkout -b feature
+echo "Feature" > file3.txt
+git add file3.txt
+git commit -m "C3: Add feature"
+```
+
+**Object Database Tekening:**
+```
+┌─────────────────────────────────────────────────────────┐
+│                    GIT OBJECT DATABASE                  │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│  BLOBS (file content):                                  │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐   │
+│  │ blob: a1b2c3 │  │ blob: d4e5f6 │  │ blob: g7h8i9 │   │
+│  │ "Hello"      │  │ "World"      │  │ "Feature"    │   │
+│  └──────────────┘  └──────────────┘  └──────────────┘   │
+│       file1.txt        file2.txt         file3.txt      │
+│                                                         │
+│  TREES (directory structure):                           │
+│  ┌────────────────┐  ┌────────────────┐  ┌────────────┐ │
+│  │ tree: T1       │  │ tree: T2       │  │ tree: T3   │ │
+│  │ - file1.txt:   │  │ - file1.txt:   │  │ - file1.txt│ │
+│  │   blob a1b2c3  │  │   blob a1b2c3  │  │ - file2.txt│ │
+│  └────────────────┘  │ - file2.txt:   │  │ - file3.txt│ │
+│         ▲            │   blob d4e5f6  │  │   blob g7h8│ │
+│         │            └────────────────┘  └────────────┘ │
+│         │                   ▲                   ▲       │
+│         │                   │                   │       │
+│  COMMITS:                   │                   │       │
+│  ┌────────────────┐  ┌──────┴───────┐  ┌────────┴────┐  │
+│  │ commit: C1     │◄─┤ commit: C2   │◄─┤ commit: C3  │  │
+│  │ tree: T1       │  │ tree: T2     │  │ tree: T3    │  │
+│  │ parent: none   │  │ parent: C1   │  │ parent: C1  │  │
+│  │ author: Jan    │  │ author: Jan  │  │ author: Jan │  │
+│  │ msg: "Initial" │  │ msg: "Add f2"│  │ msg: "Feat" │  │
+│  └────────────────┘  └──────────────┘  └─────────────┘  │
+│         ▲                   ▲                   ▲       │
+│         │                   │                   │       │
+│  REFERENCES (pointers):     │                   │       │
+│         │                   │                   │       │
+│    ┌────┴─────┐      ┌──────┴──────┐     ┌──────┴────┐  │
+│    │ HEAD     │─────►│ refs/heads/ │     │refs/heads/│  │
+│    │(symbolic)│      │    main     │     │  feature  │  │
+│    └──────────┘      └─────────────┘     └───────────┘  │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
+
+TOELICHTING:
+- C1 wijst naar tree T1 (bevat alleen file1.txt)
+- C2 wijst naar tree T2 (bevat file1.txt + file2.txt)
+- C2 heeft C1 als parent (pijl naar boven)
+- C3 wijst naar tree T3 (bevat alle 3 files)
+- C3 heeft C1 als parent (geforkt vanaf C1!)
+- main branch wijst naar C2
+- feature branch wijst naar C3
+- HEAD wijst naar main (huidige branch)
+```
+
+#### Voorbeeld 6: Merge Conflicts Oplossen
+
+```bash
+# Situatie: Beide branches wijzigen hetzelfde bestand
+git checkout -b feature/update-config
+echo "FeatureConfig=true" >> config.txt
+git add config.txt
+git commit -m "Update config for feature"
+
+git checkout main
+echo "MainConfig=true" >> config.txt
+git add config.txt
+git commit -m "Update config on main"
+
+# Proberen te mergen:
+git merge feature/update-config
+# Output: CONFLICT (content): Merge conflict in config.txt
+
+# Conflict oplossen:
+# 1. Open config.txt en zie conflict markers:
+# <<<<<<< HEAD
+# MainConfig=true
+# =======
+# FeatureConfig=true
+# >>>>>>> feature/update-config
+
+# 2. Bewerk bestand naar gewenste inhoud
+# 3. Markeer als opgelost:
+git add config.txt
+git commit -m "Merge feature/update-config with conflict resolution"
+
+# HERKENNING CONFLICT IN DIAGRAM:
+# Als twee branches hetzelfde bestand wijzigen = mogelijk conflict!
+```
+
+#### Voorbeeld 7: Remote Repository Workflow
+
+```bash
+# Clone remote repository:
+git clone https://github.com/user/repo.git
+cd repo
+
+# Zie remote branches:
+git branch -r
+# Output:
+# origin/main
+# origin/develop
+# origin/feature/user-auth
+
+# Nieuwe lokale branch vanaf remote:
+git checkout -b feature/user-auth origin/feature/user-auth
+
+# OF direct tracken:
+git checkout --track origin/feature/user-auth
+
+# Wijzigingen maken en pushen:
+git add .
+git commit -m "Update user authentication"
+git push origin feature/user-auth
+
+# Pull changes van remote:
+git checkout main
+git pull origin main
+# Equivalent aan:
+# git fetch origin
+# git merge origin/main
+
+# Alle remote branches ophalen:
+git fetch --all
+
+# Remote branch verwijderen:
+git push origin --delete feature/old-feature
+```
+
+#### Voorbeeld 8: Geavanceerde Log Commands (Voor Examen)
+
+```bash
+# Grafische weergave van alle branches:
+git log --oneline --graph --all --decorate
+# Output:
+# * 5d4c3b2 (HEAD -> main) Merge feature/shopping-cart
+# |\
+# | * 2a1b0c9 (feature/shopping-cart) Add cart validation
+# | * 7e8f9g0 Add shopping cart
+# |/
+# * a1b2c3d Update README
+# * 9f8e7d6 (tag: v1.0) Initial commit
+
+# Commits tussen twee punten:
+git log main..feature/shopping-cart
+# Toont commits die in feature zitten maar NIET in main
+
+# Commits op alle branches behalve main:
+git log --all --not main
+
+# Aantal commits per auteur:
+git shortlog -sn
+# Output:
+# 15  Jan Janssen
+#  8  Marie Peeters
+#  3  Tom Smit
+
+# Commits in laatste week:
+git log --since="1 week ago" --oneline
+
+# Files die gewijzigd zijn in commit:
+git log --stat -1
+# OF:
+git show --name-only HEAD
+
+# Zoeken in commit messages:
+git log --grep="bug" --oneline
+# Toont alle commits met "bug" in message
+```
+
+#### Belangrijke Exam Tips
+
+1. **Branches tellen**: `git branch -a` → tel regels
+2. **Commits tellen**: `git rev-list --count <branch>` 
+3. **Laatste auteur**: `git log -1 --format="%an"`
+4. **Merge type herkennen**: 
+   - Fast-forward = lineair, geen merge commit
+   - 3-way merge = merge commit met 2 parents
+   - Rebase = lineair maar hashes gewijzigd
+5. **Object database**: Altijd tonen: blobs → trees → commits → refs
+6. **Graph tekenen**: `git log --graph --oneline --all`
+
+---
+
+## Module 2.5 - UML Diagrams (Unified Modeling Language)
+
+### What is UML?
+
+**UML (Unified Modeling Language)** is a standardized visual language for modeling software systems. It helps visualize the design of a system through diagrams.
+
+**Purpose**: Communicate software architecture and design to developers, stakeholders, and documentation.
+
+**Most Common Type**: **Class Diagrams** - show classes, their attributes, methods, and relationships.
+
+---
+
+### Basic Class Diagram Structure
+
+```
+┌─────────────────────────┐
+│      ClassName          │  ← Class Name
+├─────────────────────────┤
+│ - privateField: type    │  ← Attributes/Fields
+│ + publicField: type     │
+│ # protectedField: type  │
+├─────────────────────────┤
+│ + publicMethod(): type  │  ← Methods/Operations
+│ - privateMethod()       │
+│ # protectedMethod()     │
+└─────────────────────────┘
+```
+
+**Visibility Markers**:
+- `+` = **public** (accessible from anywhere)
+- `-` = **private** (only accessible within the class)
+- `#` = **protected** (accessible in class and subclasses)
+- `~` = **package/internal** (accessible within same package/assembly)
+
+**Example**:
+```
+┌─────────────────────────┐
+│      BankAccount        │
+├─────────────────────────┤
+│ - balance: decimal      │  ← private field
+│ - accountNumber: string │
+├─────────────────────────┤
+│ + Deposit(amount)       │  ← public method
+│ + Withdraw(amount)      │
+│ + GetBalance(): decimal │
+│ - ValidateAmount()      │  ← private method
+└─────────────────────────┘
+```
+
+---
+
+### UML Relationships and Arrows
+
+#### 1. **Inheritance (Generalization)** - "IS-A" Relationship
+
+**Symbol**: `△` (hollow triangle pointing to parent)
+
+```
+┌────────────┐
+│   Animal   │
+└────────────┘
+      △
+      │
+      │
+┌─────┴──────┐
+│    Dog     │
+└────────────┘
+```
+
+**Meaning**: Dog **is an** Animal (inheritance/extends)
+
+**C# Code**:
+```csharp
+public class Animal { }
+public class Dog : Animal { }
+```
+
+---
+
+#### 2. **Realization/Implementation** - Interface Implementation
+
+**Symbol**: `△` with dashed line (hollow triangle with dashed line)
+
+```
+┌──────────────────┐
+│ <<interface>>    │
+│   IFlyable       │
+└──────────────────┘
+      △ ┆ ┆ ┆ (dashed line)
+      ┆
+┌─────┴──────┐
+│    Bird    │
+└────────────┘
+```
+
+**Meaning**: Bird **implements** IFlyable interface
+
+**C# Code**:
+```csharp
+public interface IFlyable { }
+public class Bird : IFlyable { }
+```
+
+---
+
+#### 3. **Association** - "HAS-A" or "USES" Relationship
+
+**Symbol**: `────>` (solid line with arrow)
+
+```
+┌────────────┐           ┌────────────┐
+│  Student   │────────> │  Course    │
+└────────────┘           └────────────┘
+```
+
+**Meaning**: Student **has a reference to** Course (uses)
+
+**C# Code**:
+```csharp
+public class Student
+{
+    public Course CurrentCourse { get; set; }
+}
+```
+
+**Bidirectional Association** (both know about each other):
+```
+┌────────────┐           ┌────────────┐
+│  Student   │◄────────> │  Course    │
+└────────────┘           └────────────┘
+```
+
+---
+
+#### 4. **Aggregation** - "HAS-A" (Weak Ownership)
+
+**Symbol**: `◇────>` (hollow diamond at container side)
+
+```
+┌────────────┐ ◇        ┌────────────┐
+│ Department │────────> │  Employee  │
+└────────────┘           └────────────┘
+```
+
+**Meaning**: Department **has** Employees, but Employees can exist independently
+
+**Key**: Objects can exist separately (weak relationship)
+
+**C# Code**:
+```csharp
+public class Department
+{
+    public List<Employee> Employees { get; set; }
+}
+
+public class Employee { } // Can exist without Department
+```
+
+---
+
+#### 5. **Composition** - "HAS-A" (Strong Ownership)
+
+**Symbol**: `◆────>` (filled/solid diamond at container side)
+
+```
+┌────────────┐ ◆        ┌────────────┐
+│   House    │────────> │    Room    │
+└────────────┘           └────────────┘
+```
+
+**Meaning**: House **owns** Rooms; Rooms cannot exist without House
+
+**Key**: Lifetime dependency - if House is destroyed, Rooms are destroyed
+
+**C# Code**:
+```csharp
+public class House
+{
+    private List<Room> _rooms;
+    
+    public House()
+    {
+        _rooms = new List<Room>(); // Creates rooms
+    }
+}
+
+public class Room { } // Cannot exist without House
+```
+
+---
+
+#### 6. **Dependency** - "USES" (Temporary)
+
+**Symbol**: `┆ ┆ ┆>` (dashed arrow)
+
+```
+┌────────────┐  ┆ ┆ ┆   ┌────────────┐
+│   Service  │ ┆ ┆ ┆ > │  Logger    │
+└────────────┘           └────────────┘
+```
+
+**Meaning**: Service **temporarily uses** Logger (parameter, local variable, return type)
+
+**C# Code**:
+```csharp
+public class Service
+{
+    public void DoWork(Logger logger)  // Dependency via parameter
+    {
+        logger.Log("Working...");
+    }
+}
+```
+
+---
+
+### Multiplicity (Cardinality)
+
+Shows how many instances can be associated.
+
+**Common Notations**:
+- `1` = exactly one
+- `0..1` = zero or one (optional)
+- `*` or `0..*` = zero or more
+- `1..*` = one or more
+- `n` = exactly n
+
+**Examples**:
+```
+┌────────────┐  1      *  ┌────────────┐
+│  Customer  │───────────>│   Order    │
+└────────────┘             └────────────┘
+```
+**Meaning**: 1 Customer can have many (*) Orders
+
+```
+┌────────────┐  1      1  ┌────────────┐
+│   Person   │───────────>│  Passport  │
+└────────────┘             └────────────┘
+```
+**Meaning**: 1 Person has exactly 1 Passport
+
+```
+┌────────────┐  *      *  ┌────────────┐
+│  Student   │───────────>│  Course    │
+└────────────┘             └────────────┘
+```
+**Meaning**: Many Students can enroll in many Courses (many-to-many)
+
+---
+
+### Quick Reference Chart
+
+| Relationship | Arrow | Filled/Hollow | Line Type | Meaning | Example |
+|--------------|-------|---------------|-----------|---------|---------|
+| **Inheritance** | `△` | Hollow | Solid | IS-A | Dog → Animal |
+| **Implementation** | `△` | Hollow | Dashed | Implements | Bird ┆→ IFlyable |
+| **Association** | `→` | Arrow | Solid | Uses/Has | Student → Course |
+| **Aggregation** | `◇→` | Hollow Diamond | Solid | Weak Has | Dept ◇→ Employee |
+| **Composition** | `◆→` | Filled Diamond | Solid | Strong Has | House ◆→ Room |
+| **Dependency** | `┆→` | Arrow | Dashed | Temporary Use | Service ┆→ Logger |
+
+---
+
+### Complete Example: Library System
+
+```
+                    ┌──────────────────┐
+                    │  <<interface>>   │
+                    │   IBorrowable    │
+                    ├──────────────────┤
+                    │ + Borrow()       │
+                    │ + Return()       │
+                    └──────────────────┘
+                           △ ┆ ┆ ┆
+                           ┆ ┆ ┆
+        ┌──────────────────┴───┴──────────────────┐
+        │                                          │
+┌───────┴────────┐                        ┌────────┴───────┐
+│     Book       │                        │      DVD       │
+├────────────────┤                        ├────────────────┤
+│ - title: string│                        │ - title: string│
+│ - isbn: string │                        │ - duration: int│
+├────────────────┤                        ├────────────────┤
+│ + Borrow()     │                        │ + Borrow()     │
+│ + Return()     │                        │ + Return()     │
+└────────────────┘                        └────────────────┘
+        △                                          △
+        │                                          │
+        │                                          │
+┌───────┴────────┐                        ┌────────┴───────┐
+│  EBook         │                        │  BluRay        │
+└────────────────┘                        └────────────────┘
+
+┌────────────────┐ ◆        1..*  ┌────────────────┐
+│    Library     │───────────────>│   Shelf        │
+└────────────────┘                 └────────────────┘
+        │ ◇                                 │ ◇
+        │                                   │
+        │ 1                           *    │ *
+        │                                   │
+        └────────────────┐  ┌───────────────┘
+                         │  │
+                    ┌────▼──▼─────┐
+                    │     Book     │
+                    └──────────────┘
+                         △
+                         │ ┆ ┆ ┆
+                    ┌────┴──────┐
+                    │  Member   │
+                    │ (borrows) │
+                    └───────────┘
+```
+
+**Relationships Explained**:
+1. **Implementation** (┆→): Book and DVD implement IBorrowable interface
+2. **Inheritance** (△): EBook extends Book, BluRay extends DVD
+3. **Composition** (◆→): Library strongly owns Shelves (1 to many)
+4. **Aggregation** (◇→): Library has Books, Shelf has Books (weak - books can exist independently)
+5. **Dependency** (┆→): Member depends on Book when borrowing
+
+---
+
+### Abstract Classes vs Interfaces in UML
+
+**Abstract Class**:
+```
+┌────────────────────┐
+│  <<abstract>>      │
+│   Shape            │
+├────────────────────┤
+│ # color: string    │
+├────────────────────┤
+│ + Draw()           │  ← can have implementation
+│ + {abstract} Area()│  ← abstract method
+└────────────────────┘
+```
+
+**Interface**:
+```
+┌────────────────────┐
+│  <<interface>>     │
+│   IDrawable        │
+├────────────────────┤
+│ + Draw()           │  ← only method signatures
+└────────────────────┘
+```
+
+---
+
+### Notes and Stereotypes
+
+**Stereotypes** are keywords in `<< >>` that classify elements:
+- `<<interface>>` - Interface
+- `<<abstract>>` - Abstract class
+- `<<enum>>` - Enumeration
+- `<<singleton>>` - Singleton pattern
+- `<<utility>>` - Utility/static class
+
+**Example**:
+```
+┌────────────────────┐
+│  <<singleton>>     │
+│   Logger           │
+├────────────────────┤
+│ - instance: Logger │
+├────────────────────┤
+│ + GetInstance()    │
+│ + Log(message)     │
+└────────────────────┘
+```
+
+---
+
+### Common Exam Questions on UML
+
+**1. "What type of relationship is shown?"**
+- Look at the arrow and line type
+- Check if it's solid/dashed and what's at the end
+
+**2. "Draw the UML for this code"**
+```csharp
+public interface IPayment
+{
+    void Process();
+}
+
+public class CreditCard : IPayment
+{
+    private Bank _bank;
+    
+    public void Process() { }
+}
+```
+
+**Answer**:
+```
+┌────────────────┐
+│ <<interface>>  │
+│   IPayment     │
+├────────────────┤
+│ + Process()    │
+└────────────────┘
+      △ ┆ ┆ ┆
+      ┆ ┆ ┆
+┌─────┴──────┐           ┌────────────┐
+│ CreditCard │◆─────────>│    Bank    │
+├────────────┤            └────────────┘
+│ - bank     │
+├────────────┤
+│ + Process()│
+└────────────┘
+```
+
+**3. "Explain the difference between aggregation and composition"**
+- **Aggregation** (◇): Weak ownership, child can exist independently
+  - Example: Department has Employees (employees can exist without department)
+- **Composition** (◆): Strong ownership, child cannot exist without parent
+  - Example: House has Rooms (rooms destroyed when house is destroyed)
+
+---
+
+### UML Best Practices for Exams
+
+1. **Always show visibility** (+, -, #)
+2. **Include multiplicities** on associations (1, *, 0..1, etc.)
+3. **Use correct arrow types** - solid vs dashed, filled vs hollow
+4. **Label interfaces** with `<<interface>>`
+5. **Show inheritance** with hollow triangle
+6. **Composition vs Aggregation** - think about lifetime dependency
+7. **Keep diagrams simple** - don't show every detail unless asked
+
 ---
 
 ## Module 3 - Design Patterns
