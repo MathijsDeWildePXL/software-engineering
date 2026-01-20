@@ -1,0 +1,71 @@
+1. Wat vind jij van de code zoals die gegeven is? Welke principe(s) is/zijn geschonden en waarom?
+
+De originele code in DepartmentSecretary schendt meerdere SOLID principes:
+
+a) Single Responsibility Principle (SRP): De DepartmentSecretary klasse heeft te veel verantwoordelijkheden:
+   - Het beheren van berichten
+   - Het beheren van studenten en schermen (subscribers)
+   - Het versturen van notificaties naar verschillende ontvangers
+
+b) Open/Closed Principle (OCP): De code is niet open voor uitbreiding maar wel voor modificatie:
+   - Als we een nieuw type ontvanger willen toevoegen (bijv. een email subscriber), moeten we de 
+     DepartmentSecretary klasse aanpassen door een nieuwe lijst toe te voegen en de 
+     AnnounceRosterChange/AnnounceFireAlarm methoden te wijzigen.
+
+c) Dependency Inversion Principle (DIP): De DepartmentSecretary is direct afhankelijk van concrete 
+   implementaties (Student en PublicityScreen) in plaats van abstracties/interfaces.
+
+d) Tight Coupling: De DepartmentSecretary is sterk gekoppeld aan de specifieke implementaties van 
+   Student en PublicityScreen. Dit maakt de code inflexibel en moeilijk te testen.
+
+
+2. Welk Design Pattern is het meest geschikt om dit op te lossen? Motiveer je keuze!
+
+Het Observer Pattern is het meest geschikte patroon voor dit probleem omdat:
+
+a) One-to-Many relatie: Het patroon definieert een één-op-veel afhankelijkheid tussen objecten, 
+   zodat wanneer één object (Subject) van status verandert, alle afhankelijke objecten (Observers) 
+   automatisch worden geïnformeerd en bijgewerkt.
+
+b) Loose Coupling: Het Subject kent zijn observers alleen via de IObserver interface, waardoor de 
+   koppeling tussen Subject en Observers minimaal is.
+
+c) Dynamisch toevoegen/verwijderen: Observers kunnen tijdens runtime worden toegevoegd of verwijderd 
+   zonder de Subject klasse te wijzigen.
+
+d) Perfect voor notificatiesystemen: Het PXLAlert systeem is essentieel een notificatiesysteem 
+   waarbij verschillende ontvangers (studenten, schermen) op de hoogte moeten worden gebracht van 
+   nieuwe berichten.
+
+Implementatie:
+- ISubject interface: Definieert methoden voor het registreren, verwijderen en notificeren van observers
+- IObserver interface: Definieert de Update() methode die wordt aangeroepen wanneer het subject verandert
+- IDisplayElement interface: Optionele interface voor objecten die een display functionaliteit hebben
+- ObserverDepartmentSecretary (Subject): Implementeert ISubject en beheert de lijst van observers
+- ObserverStudent en ObserverPublicityScreen (Observers): Implementeren IObserver en ontvangen updates
+
+
+3. Hieronder kan je nog eventuele bemerkingen formuleren.
+
+Voordelen van de Observer Pattern implementatie:
+- Nieuwe observers kunnen eenvoudig worden toegevoegd zonder bestaande code te wijzigen
+- De DepartmentSecretary hoeft niet te weten welke concrete observers er zijn
+- Voldoet aan het Open/Closed Principle
+- Betere testbaarheid door gebruik van interfaces
+
+Opmerkingen over de implementatie:
+- Het gebruik van geparametriseerde methoden in de interfaces (IObserver.Update(PXLAlertMessage), 
+  IDisplayElement.Display(PXLAlertMessage), ISubject.NotifyObservers(string, Severity)) is correct 
+  en zelfs wenselijk. Dit zorgt ervoor dat de observers de nodige informatie ontvangen om te kunnen 
+  reageren op de notificatie.
+  
+- De IDisplayElement interface is optioneel maar helpt bij het scheiden van concerns: het update 
+  mechanisme (IObserver) en de display logica (IDisplayElement).
+
+- In de ObserverDepartmentSecretary worden berichten niet opgeslagen in een lijst zoals in de 
+  originele implementatie. Als dit wel nodig is, kan dit eenvoudig worden toegevoegd zonder de 
+  observer functionaliteit te beïnvloeden.
+
+- De implementatie gebruikt de "push" methode van het Observer pattern (het Subject pusht alle 
+  informatie naar de Observers via parameters). Een alternatief zou de "pull" methode zijn waarbij 
+  Observers zelf data ophalen van het Subject wanneer ze genotificeerd worden.
